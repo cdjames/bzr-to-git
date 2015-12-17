@@ -4,11 +4,14 @@
 #
 # Shell script to convert bzr repo to git. Requires the bzr fastimport module.
 #
-# Note: New to git. This works, but probably could be done in a step or two less.
 #
-# Usage: bz2git.sh "$client" "$project"
+# Usage: bz2git.sh ["$clientname" "$projectname"]
+#			without params it will just convert to git	
+#			with params it will convert, make new repo, and push to github repo	
 #
-# @author programming@dbswebsite.com 2012-11-13
+# @author cdjames 2015-12-17 with help from 
+# http://stackoverflow.com/questions/2423777/is-it-possible-to-create-a-remote-repo-on-github-from-the-cli-without-ssh
+# @modifying bzr2git.sh by programming@dbswebsite.com 2012-11-13
 #
 # LICENSE
 #
@@ -27,50 +30,62 @@
 #
 ###############################################################################
 
-repo_master=repos.dbswebsite.com
-
-clear
-
 # sanity checks
-[ ! -d .bzr ] && echo is this a bzr repo or not? && exit 1
-
-# For our purposes, we need to know the CLIENT and the PROJECT!
-[ ! "$1" ] && echo Need client name on command line && exit 1
-[ ! "$2" ] && echo Need project name on command line && exit 1
+if [ ! -d .bzr ]
+then
+	echo "Is this a bzr repo or not?"
+	exit 1
+fi
 
 # normalize $client. TODO
-client=$(echo "$1" |  sed  -e 's/ /-/g' |tolower.sh)
-project=$(echo "$2" |  sed  -e 's/ /-/g' |tolower.sh)
+#client=$(echo "$1" |  sed  -e 's/ /-/g' |tolower.sh)
+#project=$(echo "$2" |  sed  -e 's/ /-/g' |tolower.sh)
 
 echo starting git conversion, making sure bzr is up to date ....
 # make sure all the bzr stuff is up to date & committed
 bzr update
-bzr add
-bzr commit -m 'Final bzr commit, if needed ...'
+#bzr add
+#bzr commit -m 'Final bzr commit, if needed ...'
 
 # git does not handle empty directories (bzr does)
 find -type d -empty -exec touch {}/.ignore \;
 
 # starting git import
 git init
-cp .bzrignore .gitignore
-bzr fast-export `pwd` | git fast-import
-rm -rfv .bzr*
-git add .
-git commit -m "Converting to git"  
-# 
+
+# if bzrignore, copy it to gitignore
+if [ -e .bzrignore ]
+then 
+	cp .bzrignore .gitignore
+fi
+
+# do actual export and import
+bzr fast-export --plain . | git fast-import
+# remove traces of bzr
+#rm -rfv .bzr*
+# git add .
+git checkout -f master
+# git commit -m "Converting to git"  
+ 
 echo
-echo Look OK? Is $repo_master ready for new repo? Are we good to go for a push? ctrl-c to cancel
-read
+echo "Conversion complete."
 
-echo creating repo on $repo_master and pushing code ...
-# create-git-repo.sh is custom script to create file $client/$project file structure and initialize a --bare git repo
-ssh git@$repo_master create-git-repo.sh \"$client\" \"$project\"
-git remote add origin "git@$repo_master:/repos/git/$client/$project"
-git push origin master
-git config branch.master.remote origin
-git config branch.master.merge refs/heads/master
+# only do if you have username and project name
+if [ "$2" ]
+then
+	echo "Is github.com/$1 ready for new repo? Are we good to go for a push? Ctrl-c to cancel push"
+	read
 
-echo;echo Done. Test it now.
+	echo "Creating repo on github and pushing code..."
 
-# yea
+	curl -u "$1" https://api.github.com/user/repos -d "{\"name\":\"$2\"}"
+	if [ ! -d .git ]
+	then
+		git init
+	fi
+	git remote add origin git@github.com:$1/$2.git
+	git push origin master
+
+	echo
+	echo "Repo is on github. Please confirm."
+fi
