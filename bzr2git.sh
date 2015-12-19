@@ -5,7 +5,7 @@
 # Shell script to convert bzr repo to git. Requires the bzr fastimport module.
 #
 #
-# Usage: bz2git.sh ["$clientname" "$projectname"]
+# Usage: bz2git.sh ["$clientname" "$projectname" ["$description"]]
 #			without params it will just convert to git	
 #			with params it will convert, make new repo, and push to github repo	
 #
