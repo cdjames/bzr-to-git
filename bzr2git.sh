@@ -41,44 +41,61 @@ fi
 #client=$(echo "$1" |  sed  -e 's/ /-/g' |tolower.sh)
 #project=$(echo "$2" |  sed  -e 's/ /-/g' |tolower.sh)
 
-echo starting git conversion, making sure bzr is up to date ....
-# make sure all the bzr stuff is up to date & committed
-bzr update
-#bzr add
-#bzr commit -m 'Final bzr commit, if needed ...'
+if [ ! -d .git ] 
+then
+	echo starting git conversion, making sure bzr is up to date ....
+	# make sure all the bzr stuff is up to date & committed
+	bzr update
+	#bzr add
+	#bzr commit -m 'Final bzr commit, if needed ...'
 
-# git does not handle empty directories (bzr does)
-find -type d -empty -exec touch {}/.ignore \;
+	# git does not handle empty directories (bzr does)
+	find -type d -empty -exec touch {}/.ignore \;
 
-# starting git import
-git init
+	# starting git import
+	# initialize
+	git init
 
-# if bzrignore, copy it to gitignore
-if [ -e .bzrignore ]
-then 
-	cp .bzrignore .gitignore
+	# take care of .gitignore
+	if [ ! -e .gitignore ]
+	then
+		# if bzrignore, copy it to gitignore
+		if [ -e .bzrignore ]
+		then 
+			cp .bzrignore .gitignore
+		else
+			echo docs/ > .gitignore; echo .bzr/ >> .gitignore
+		fi
+	fi
+	# do actual export and import
+	bzr fast-export --plain . | git fast-import
+	# remove traces of bzr
+	#rm -rfv .bzr*
+	git checkout -f master
+	# git add .
+	# git commit -m "Converting to git"  
+	 
+	echo
+	echo "Conversion complete."
+else
+	echo "Git already in use."
 fi
 
-# do actual export and import
-bzr fast-export --plain . | git fast-import
-# remove traces of bzr
-#rm -rfv .bzr*
-# git add .
-git checkout -f master
-# git commit -m "Converting to git"  
- 
-echo
-echo "Conversion complete."
-
-# only do if you have username and project name
+# only do if you have username and project name (and/or description)
 if [ "$2" ]
 then
 	echo "Is github.com/$1 ready for new repo? Are we good to go for a push? Ctrl-c to cancel push"
 	read
 
 	echo "Creating repo on github and pushing code..."
+	# if there is a description
+	if [ "$3" ]
+	then
+		curl -u "$1" https://api.github.com/user/repos -d "{\"name\":\"$2\",\"description\":\"$3\"}"
+	else
+		curl -u "$1" https://api.github.com/user/repos -d "{\"name\":\"$2\"}"
+	fi
 
-	curl -u "$1" https://api.github.com/user/repos -d "{\"name\":\"$2\"}"
 	if [ ! -d .git ]
 	then
 		git init
