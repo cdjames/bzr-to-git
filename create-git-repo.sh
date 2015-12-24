@@ -19,23 +19,23 @@
 owner=git
 group=development
 permissions=775
-repos=repos.dbswebsite.com
+repos=github.com
 repo_home=$repos:/repos/git
 tmp=/tmp/repos/git
 home=$(pwd)
 
 ! [ "$1" ] && echo You need a client name on the command line, friend && exit 1
 ! [ "$2" ] && echo You need a client name and a project name on the command line, doh && exit 1
-[ "$3" ] && echo "Too many command line args. Did you quote the client name? ass_hat" && exit 1
+[ "$3" ] && echo "Too many command line args. Did you quote the client name?" && exit 1
 
-if [ $(hostname) != $repos ];then
+if [ $(hostname) != $repos ]; then
 	echo Wrong host ... should be run from $repos, sir
 	exit
 fi
 
 # normalize
-client=$(echo "$1" |  sed  -e 's/ /-/g' |tolower.sh)
-project=$(echo "$2" |  sed  -e 's/ /-/g' |tolower.sh)
+client=$(echo "$1" |  sed  -e 's/ /-/g' | tolower.sh)
+project=$(echo "$2" |  sed  -e 's/ /-/g' | tolower.sh)
 
 clear
 
