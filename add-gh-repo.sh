@@ -29,21 +29,21 @@
 #
 ###############################################################################
 
-# sanity checks
+# check for git folder
 if [ ! -d .git ]
 then
 	echo "No git repo found; add one before continuing."
 	exit 1
 fi
 
-# only do if you have username and project name (and/or description)
+# only do if you have username AND project name (and/or description)
 if [ "$2" ]
 then
 	echo "Is github.com/$1 ready for new repo called $2? Are we good to go for a push? Ctrl-c to cancel push"
 	read
 
 	echo "Creating new repo on github and pushing code..."
-	# if there is a description
+	# if there is also a description, create a new folder
 	if [ "$3" ]
 	then
 		curl -u "$1" https://api.github.com/user/repos -d "{\"name\":\"$2\",\"description\":\"$3\"}"
@@ -55,11 +55,13 @@ then
 	then
 		git init
 	fi
-	git remote add origin git@github.com:$1/$2.git
+	# add local files to github folder
+	git remote add origin https://github.com/$1/$2.git
 	git push origin master
 
 	echo
 	echo "Repo is on github. Please confirm."
+	git remote -v
 else 
 	echo "You need to specify a name for the new repository, and optionally a description."
 fi
